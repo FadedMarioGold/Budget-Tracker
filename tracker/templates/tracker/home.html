@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expense Tracker</title>
+
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f4f4f4;
+        }
+        nav {
+            background: #333;
+            padding: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        nav a {
+            color: white;
+            text-decoration: none;
+            margin: 0 10px;
+            font-size: 18px;
+        }
+        nav a:hover {
+            text-decoration: underline;
+        }
+        .expense-form-container{
+             width: 50%;  
+            margin: 20px auto;  
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            border-radius: 8px;
+            
+        }
+        form input, form select, form textarea {
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0px 0px 10px rgba(0,0,0,0.1);
+            width: 50%;
+            margin: 10px ;
+        }
+     button {
+            background: #28a745;
+            color: white;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #218838;
+        }
+        table {
+            width: 70%;
+            margin: auto;
+            border-collapse: collapse;
+            background: white;
+            box-shadow: 0px 0px 10px rgba(0,0,0,0.1);
+        }
+        th, td {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+        canvas {
+            max-width: 400px;
+            max-height: 400px;
+            margin: auto;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div>
+            <a href="{% url 'home' %}">Home</a>
+        </div>
+        <div>
+            {% if user.is_authenticated %}
+                <span style="color: white;">Welcome, {{ user.username }}!</span>
+                <a href="{% url 'login' %}">Logout</a>
+               
+                <a href="{% url 'export-expenses-pdf' %}">
+                    <button >Export Expenses to PDF</button>
+                </a>
+                
+            {% else %}
+                <a href="{% url 'login' %}">Login</a>
+                <a href="{% url 'register' %}">Register</a>
+            {% endif %}
+        </div>
+    </nav>
+
+    <h1>Expense Tracker</h1>
+<div class="expense-form-container">
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Add Expense</button> 
+    </form>
+</div>
+
+    <h1>Expense List</h1>
+
+    <table>
+        <tr>
+            <th>Title</th>
+            <th>Amount</th>
+            <th>Category</th>
+            <th>Date</th>
+            <th>Actions</th>
+        </tr>
+        {% for expense in expenses %}
+        <tr>
+            <td>{{ expense.title }}</td>
+            <td>Rs.{{ expense.amount }}</td>
+            <td>{{ expense.category }}</td>
+            <td>{{ expense.date }}</td>
+            <td>
+                <form method="POST" action="{% url 'delete-expense' expense.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger" style=" background-color: red;">Delete</button>
+                </form>
+            </td>
+            <td>
+                <a href="{% url 'edit-expense' expense.id %}">
+                    <button class="btn btn-primary">Edit</button>
+                </a>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <h2>Expense Breakdown</h2>
+    <canvas id="expenseChart"></canvas>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            var ctx = document.getElementById('expenseChart').getContext('2d');
+            var expenseChart = new Chart(ctx, {
+                type: 'pie', // Pie chart
+                data: {
+                    labels: {{ categories|safe }},  // Injecting Django variable safely
+                    datasets: [{
+                        data: {{ amounts|safe }},  // Injecting Django variable safely
+                        backgroundColor: ['#ff6384', '#36a2eb', '#ffce56', '#4bc0c0', '#9966ff'],
+                    }]
+                }
+            });
+        });
+    </script>
+</body>
+</html>
